@@ -1,6 +1,6 @@
 {
   "name": "@htwdev/pi-env-loader",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "pi extension for loading environment variables from .env files",
   "type": "module",
   "sideEffects": false,
