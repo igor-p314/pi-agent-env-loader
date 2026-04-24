@@ -31,8 +31,6 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Run v
-        run: npm -v
 
       - name: Publish to npm
         run: npx npm@latest publish --provenance --access public

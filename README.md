@@ -1,8 +1,10 @@
 # pi-env-loader
 
-Расширение для [pi](https://github.com/mariozechner/pi) — загружает переменные окружения из `.env` файла.
+Расширение для [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) — загружает переменные окружения из `.env` файла.
 
-[English version](#english-version) | [Версия на русском](#pi-env-loader-1)
+Extension for [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) — Load variables from `.env` file.
+
+[English version 🇺🇸 / 🇬🇧 ](#english-version) | [Версия на русском 🇷🇺](#pi-env-loader-1)
 
 ## Установка
 
@@ -92,6 +94,9 @@ PATH=/c/Users/user/bin:$PATH  # Unix-style в Git Bash
 ## Лицензия
 
 MIT
+
+## Vibecode
+100% vibecode
 
 ---
 
@@ -189,3 +194,6 @@ Automatically masked: `*_KEY`, `*_SECRET`, `*_PASSWORD`, `*_TOKEN`, `*_AUTH`, `*
 ## License
 
 MIT
+
+## Vibecode
+100% vibecode
