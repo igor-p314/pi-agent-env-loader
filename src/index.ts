@@ -96,18 +96,21 @@ export default function envLoaderExtension(pi: ExtensionAPI) {
         return filtered.length > 0 ? filtered.map((o) => ({ value: o, label: o })) : null;
       }
 
+      // Strip quotes from prefix for path handling
+      let cleanPrefix = prefix.replace(/^["']|["']$/g, "");
+      
       // Get platform-appropriate path separator
       const isWindows = globalThis.process?.platform === "win32";
       const pathSep = isWindows ? "\\" : "/";
 
-      // Check if it looks like a path
-      if (isPathLike(prefix)) {
+      // Check if it looks like a path (use cleaned prefix without quotes)
+      if (isPathLike(cleanPrefix)) {
         try {
           const cwd = process.cwd();
           // Normalize path separators based on platform
           const normalizedPrefix = isWindows 
-            ? prefix.replace(/\//g, "\\") 
-            : prefix.replace(/\\/g, "/");
+            ? cleanPrefix.replace(/\//g, "\\") 
+            : cleanPrefix.replace(/\\/g, "/");
           
           const dir = path.dirname(normalizedPrefix || ".");
           const resolvedDir = path.isAbsolute(dir) ? dir : path.join(cwd, dir);

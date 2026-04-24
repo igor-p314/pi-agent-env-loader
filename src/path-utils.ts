@@ -39,6 +39,8 @@ export function isPathLike(prefix: string, commands: readonly string[] = COMMAND
     prefix.startsWith(".") ||                   // Relative path
     WINDOWS_DRIVE_REGEX.test(prefix) ||          // Windows drive (C:, D:)
     FILE_EXTENSION_REGEX.test(prefix) ||          // Has file extension
-    PATH_LIKE_REGEX.test(prefix)                 // Contains any path separator
+    PATH_LIKE_REGEX.test(prefix) ||                 // Contains any path separator
+    // Check for Cyrillic characters (Unicode range А-Я for Russian/Cyrillic)
+    /^[\u0400-\u04FF]/.test(prefix)                    // Starts with Cyrillic letter
   );
 }
