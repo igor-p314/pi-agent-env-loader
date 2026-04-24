@@ -96,13 +96,22 @@ export default function envLoaderExtension(pi: ExtensionAPI) {
         return filtered.length > 0 ? filtered.map((o) => ({ value: o, label: o })) : null;
       }
 
+      // Get platform-appropriate path separator
+      const isWindows = globalThis.process?.platform === "win32";
+      const pathSep = isWindows ? "\\" : "/";
+
       // Check if it looks like a path
       if (isPathLike(prefix)) {
         try {
           const cwd = process.cwd();
-          const dir = path.dirname(prefix || ".");
+          // Normalize path separators based on platform
+          const normalizedPrefix = isWindows 
+            ? prefix.replace(/\//g, "\\") 
+            : prefix.replace(/\\/g, "/");
+          
+          const dir = path.dirname(normalizedPrefix || ".");
           const resolvedDir = path.isAbsolute(dir) ? dir : path.join(cwd, dir);
-          const baseName = path.basename(prefix || "");
+          const baseName = path.basename(normalizedPrefix || "");
 
           if (fs.existsSync(resolvedDir) && fs.statSync(resolvedDir).isDirectory()) {
             const entries = fs.readdirSync(resolvedDir);
@@ -110,9 +119,15 @@ export default function envLoaderExtension(pi: ExtensionAPI) {
             return filtered.slice(0, 10).map(e => {
               const fullPath = path.join(resolvedDir, e);
               const isDir = fs.statSync(fullPath).isDirectory();
+              const fullPathWithSep = path.join(dir, e) + (isDir ? pathSep : "");
+              
+              // Add quotes if path contains spaces
+              const needsQuotes = e.includes(" ") || e.includes("(") || e.includes(")");
+              const quotedPath = needsQuotes ? `"${fullPathWithSep}"` : fullPathWithSep;
+              
               return {
-                value: path.join(dir, e) + (isDir ? "/" : ""),
-                label: e + (isDir ? "/" : "")
+                value: quotedPath,
+                label: e + (isDir ? pathSep : "")
               };
             });
           }

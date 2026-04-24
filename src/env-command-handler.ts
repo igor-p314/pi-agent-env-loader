@@ -4,13 +4,74 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { COMMANDS, COMMANDS_NO_ENV, MAX_DISPLAY_ERRORS, MAX_DISPLAY_KEYS } from "./constants.js";
+import { COMMANDS_NO_ENV, MAX_DISPLAY_ERRORS, MAX_DISPLAY_KEYS } from "./constants.js";
 import { VERSION } from "./version.js";
 import { EnvParser } from "./parser.js";
 import { EnvCollector } from "./collector.js";
 import type { EnvProvider } from "./types.js";
-import { ProcessEnvProvider } from "./types.js";
-import type { ExtensionContext } from "@mariozechner/pi-coding-agent"; // Adjust if needed
+import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
+
+/**
+ * Strip quotes from a string (both single and double)
+ * @param str - String that may have quotes
+ * @returns String without surrounding quotes
+ */
+function stripQuotes(str: string): string {
+  if (str.length >= 2) {
+    if ((str.startsWith('"') && str.endsWith('"')) ||
+        (str.startsWith("'") && str.endsWith("'"))) {
+      return str.slice(1, -1);
+    }
+  }
+  return str;
+}
+
+/**
+ * Parse command arguments, handling quoted paths
+ * @param args - Raw command arguments string
+ * @returns Array of parts with quotes stripped
+ */
+function parseArgs(args: string): string[] {
+  const parts: string[] = [];
+  let current = "";
+  let inSingleQuote = false;
+  let inDoubleQuote = false;
+  let i = 0;
+
+  while (i < args.length) {
+    const char = args[i];
+
+    if (char === "'" && !inDoubleQuote) {
+      inSingleQuote = !inSingleQuote;
+      i++;
+      continue;
+    }
+
+    if (char === '"' && !inSingleQuote) {
+      inDoubleQuote = !inDoubleQuote;
+      i++;
+      continue;
+    }
+
+    if (char === " " && !inSingleQuote && !inDoubleQuote) {
+      if (current) {
+        parts.push(current);
+        current = "";
+      }
+      i++;
+      continue;
+    }
+
+    current += char;
+    i++;
+  }
+
+  if (current) {
+    parts.push(current);
+  }
+
+  return parts;
+}
 
 export class EnvCommandHandler {
   private parser: EnvParser;
@@ -25,19 +86,62 @@ export class EnvCommandHandler {
 
   /**
    * Execute the /env command with given arguments and context
+   *
+   * Usage:
+   *   /env                     -> load from .env
+   *   /env <path>              -> load from custom file
+   *   /env "path with spaces"  -> load from quoted path
+   *   /env list                -> list variables from .env
+   *   /env <path> list         -> list variables from custom file
+   *   /env get KEY             -> get KEY from .env
+   *   /env <path> get KEY      -> get KEY from custom file
+   *   /env set KEY VALUE       -> set KEY in process.env
+   *   /env help                -> show help
    */
   async execute(args: string, ctx: ExtensionContext): Promise<void> {
-    const [inputRaw, ...paramParts] = args.trim().split(/\s+/);
-    const input = inputRaw?.toLowerCase() || "";
-    const param = paramParts.join(" ");
+    const parts = parseArgs(args);
+    const firstArg = parts[0]?.toLowerCase() || "";
+    const remainingArgs = parts.slice(1);
     const cwd = ctx.cwd;
 
-    const isCommand = COMMANDS_NO_ENV.has(input) || ["reload", "list", "get"].includes(input);
-    const targetPath = isCommand || !input
-      ? path.join(cwd, ".env")
-      : path.isAbsolute(input) ? input : path.join(cwd, input);
+    // Determine if first argument is a command or a path
+    const isCommand = COMMANDS_NO_ENV.has(firstArg) || ["list", "get"].includes(firstArg);
 
-    if (!COMMANDS_NO_ENV.has(input) && !fs.existsSync(targetPath)) {
+    let targetPath: string;
+    let command: string;
+    let commandParams: string[];
+
+    if (isCommand) {
+      // /env <command> - use default .env
+      targetPath = path.join(cwd, ".env");
+      command = firstArg;
+      commandParams = remainingArgs;
+    } else if (firstArg) {
+      // /env <path> or /env <path> <command>
+      // Strip quotes from path if present
+      const cleanFirstArg = stripQuotes(firstArg);
+      const firstArgPath = path.isAbsolute(cleanFirstArg) ? cleanFirstArg : path.join(cwd, cleanFirstArg);
+      const secondArg = remainingArgs[0]?.toLowerCase() || "";
+
+      if (COMMANDS_NO_ENV.has(secondArg) || ["list", "get"].includes(secondArg)) {
+        // /env <path> <command>
+        targetPath = firstArgPath;
+        command = secondArg;
+        commandParams = remainingArgs.slice(1);
+      } else {
+        // /env <path> - just load the file
+        targetPath = firstArgPath;
+        command = "";
+        commandParams = [];
+      }
+    } else {
+      // No args - use default .env
+      targetPath = path.join(cwd, ".env");
+      command = "";
+      commandParams = [];
+    }
+
+    if (!COMMANDS_NO_ENV.has(command) && !fs.existsSync(targetPath)) {
       ctx.ui.notify(`File not found: ${targetPath}`, "warning");
       return;
     }
@@ -48,11 +152,11 @@ export class EnvCommandHandler {
       try {
         content = fs.readFileSync(targetPath, "utf-8");
       } catch (error) {
-        if (error instanceof Error && 'code' in error) {
+        if (error instanceof Error && "code" in error) {
           const code = (error as NodeJS.ErrnoException).code;
-          if (code === 'EACCES') {
+          if (code === "EACCES") {
             ctx.ui.notify(`Permission denied: ${targetPath}`, "error");
-          } else if (code === 'ENOENT') {
+          } else if (code === "ENOENT") {
             ctx.ui.notify(`File not found: ${targetPath}`, "error");
           } else {
             ctx.ui.notify(`Failed to read file: ${error.message}`, "error");
@@ -66,31 +170,32 @@ export class EnvCommandHandler {
       const result = this.parser.parse(content);
       if (result.errors.length > 0) {
         const limitedErrors = result.errors.slice(0, MAX_DISPLAY_ERRORS);
-        ctx.ui.notify(`Parse warnings: ${limitedErrors.join("; ")}${result.errors.length > MAX_DISPLAY_ERRORS ? ` (+${result.errors.length - MAX_DISPLAY_ERRORS} more)` : ""}`, "warning");
+        ctx.ui.notify(
+          `Parse warnings: ${limitedErrors.join("; ")}${result.errors.length > MAX_DISPLAY_ERRORS ? ` (+${result.errors.length - MAX_DISPLAY_ERRORS} more)` : ""}`,
+          "warning"
+        );
       }
       vars = result.vars;
     }
 
-    if (vars.length === 0 && !COMMANDS_NO_ENV.has(input)) {
+    if (vars.length === 0 && !COMMANDS_NO_ENV.has(command)) {
       ctx.ui.notify("File is empty or invalid", "info");
       return;
     }
 
-    switch (input) {
+    const param = commandParams.join(" ");
+    switch (command) {
       case "help":
         this.handleHelp(ctx);
         return;
       case "list":
-        this.handleList(vars, ctx);
+        this.handleList(vars, targetPath, ctx);
         return;
       case "get":
-        this.handleGet(vars, param, ctx);
+        this.handleGet(vars, param, targetPath, ctx);
         return;
       case "set":
-        this.handleSet(paramParts, ctx);
-        return;
-      case "reload":
-        this.handleReload(vars, ctx);
+        this.handleSet(commandParams, ctx);
         return;
       default:
         this.handleDefault(vars, ctx);
@@ -100,33 +205,39 @@ export class EnvCommandHandler {
 
   private handleHelp(ctx: ExtensionContext): void {
     ctx.ui.notify(`Env Loader v${VERSION} - .env file loader`, "info");
-    ctx.ui.notify([
-      "Usage:",
-      "  /env                     Load variables from .env",
-      "  /env <PATH_TO_FILE>      Load from custom file path",
-      "  /env reload              Reload all variables (overwrites existing)",
-      "  /env list                List all variables in .env",
-      "  /env get KEY             Get a specific variable",
-      "  /env set KEY VALUE       Set variable in process.env",
-      "  /env help                Show this help",
-      "",
-      "Extended Syntax in .env:",
-      "  export KEY=value    Set variable",
-      "  KEY?=value         Set only if not exists (default)",
-      "  KEY+=value         Append to existing (colon-separated)",
-      "  KEY-=value         Prepend to existing",
-      "",
-      "Features:",
-      "  - Variable interpolation: ${VAR} or $VAR",
-      "  - Escape sequences: \\n, \\t, \\r, \\\", \\'",
-      "  - Multiline values (backslash at end of line)",
-      "  - Inline comments (stripped outside quotes)",
-      "  - Protected vars (PATH, HOME, etc.) skipped",
-      "  - Secret masking (* for KEY, SECRET, TOKEN, PASSWORD)",
-    ].join("\n"), "info");
+    ctx.ui.notify(
+      [
+        "Usage:",
+        "  /env                     Load variables from .env",
+        "  /env <PATH_TO_FILE>      Load from custom file",
+        "  /env \"path with spaces\"  Load from quoted path",
+        "  /env list                List all variables in .env",
+        "  /env <PATH> list         List variables from custom file",
+        "  /env get KEY             Get variable from .env",
+        "  /env <PATH> get KEY      Get variable from custom file",
+        "  /env set KEY VALUE       Set variable in process.env",
+        "  /env help                Show this help",
+        "",
+        "Extended Syntax in .env:",
+        "  export KEY=value    Set variable",
+        "  KEY?=value         Set only if not exists (default)",
+        "  KEY+=value         Append to existing (colon-separated)",
+        "  KEY-=value         Prepend to existing",
+        "",
+        "Features:",
+        "  - Variable interpolation: ${VAR} or $VAR",
+        "  - Escape sequences: \\n, \\t, \\r, \\\", \\'",
+        "  - Multiline values (backslash at end of line)",
+        "  - Inline comments (stripped outside quotes)",
+        "  - Protected vars (PATH, HOME, etc.) skipped",
+        "  - Secret masking (* for KEY, SECRET, TOKEN, PASSWORD)",
+      ].join("\n"),
+      "info"
+    );
   }
 
-  private handleList(vars: { key: string; value: string }[], ctx: ExtensionContext): void {
+  private handleList(vars: { key: string; value: string }[], targetPath: string, ctx: ExtensionContext): void {
+    const fileName = path.basename(targetPath);
     const varList: string[] = [];
     for (const { key, value } of vars) {
       let displayValue = value;
@@ -137,18 +248,24 @@ export class EnvCommandHandler {
       }
       varList.push(`${key}=${displayValue}`);
     }
-    ctx.ui.notify(`Found ${vars.length} variable(s) in .env`, "info");
+    ctx.ui.notify(`Found ${vars.length} variable(s) in ${fileName}`, "info");
     ctx.ui.notify(varList.join("\n"), "info");
   }
 
-  private handleGet(vars: { key: string; value: string }[], param: string, ctx: ExtensionContext): void {
+  private handleGet(
+    vars: { key: string; value: string }[],
+    param: string,
+    targetPath: string,
+    ctx: ExtensionContext
+  ): void {
     if (!param) {
-      ctx.ui.notify("Usage: /env get KEY", "warning");
+      ctx.ui.notify("Usage: /env get KEY or /env <PATH> get KEY", "warning");
       return;
     }
+    const fileName = path.basename(targetPath);
     const found = vars.find((v) => v.key === param);
     if (!found) {
-      ctx.ui.notify(`Variable '${param}' not found in .env`, "warning");
+      ctx.ui.notify(`Variable '${param}' not found in ${fileName}`, "warning");
       return;
     }
     const value = this.collector.isSecretKey(param) ? this.collector.maskValue(found.value) : found.value;
@@ -180,22 +297,12 @@ export class EnvCommandHandler {
     ctx.ui.notify(`Set ${setKey}=${display} (process.env only)`, "info");
   }
 
-  private handleReload(vars: { key: string; value: string }[], ctx: ExtensionContext): void {
-    // Force overwrite existing variables for "set" operations
-    // Note: "default" (?=) operations are NEVER overwritten, even with forceOverwrite
-    const changes = this.collector.collect(vars, process.env, true);
-    this.collector.apply(changes);
-    const loaded = changes.toSet.size;
-    const protectedCount = changes.skipped.filter(s => s.reason === "protected").length;
-    ctx.ui.notify(`Reloaded ${loaded} environment variable(s)${protectedCount > 0 ? ` (${protectedCount} protected skipped)` : ""}${loaded > 0 ? " (overwritten)" : ""}`, "info");
-  }
-
   private handleDefault(vars: { key: string; value: string }[], ctx: ExtensionContext): void {
     const changes = this.collector.collect(vars);
     this.collector.apply(changes);
     const loaded = changes.toSet.size;
-    const protectedCount = changes.skipped.filter(s => s.reason === "protected").length;
-    const existsCount = changes.skipped.filter(s => s.reason === "exists").length;
+    const protectedCount = changes.skipped.filter((s) => s.reason === "protected").length;
+    const existsCount = changes.skipped.filter((s) => s.reason === "exists").length;
 
     if (loaded > 0) {
       const partsList: string[] = [`Loaded ${loaded} new environment variable(s)`];
@@ -215,3 +322,6 @@ export class EnvCommandHandler {
     }
   }
 }
+
+// Export utility functions for testing
+export { stripQuotes, parseArgs };
