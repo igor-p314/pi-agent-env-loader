@@ -1,0 +1,46 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build package
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check for version in npm
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view ${{ matrix.name }}@$VERSION version &>/dev/null; then
+            echo "Version $VERSION already published"
+            exit 1
+          fi
+        env:
+          name: ${{ github.event.repository.name }}
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public

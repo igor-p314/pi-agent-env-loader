@@ -1,238 +1,99 @@
-# Env Loader Extension
+# pi-env-loader
 
-**Русский** | [English](#english)
+Расширение для [pi](https://github.com/mariozechner/pi) — загружает переменные окружения из `.env` файла.
 
-## Описание
-
-Расширение `env-loader` добавляет в pi команду `/env` для загрузки переменных окружения из `.env` файла в проект.
-
-## Установка
-
-1. Скопируйте файл `env-loader.ts` в папку `.pi/extensions/` или `~/.pi/agent/extensions/`
-2. Перезапустите pi или используйте `/reload`
-3. Используйте команду `/env`
-
-## Использование
-
-### Основные команды
-
-| Команда | Описание |
-|---------|----------|
-| `/env` | Загрузить переменные из `.env` |
-| `/env reload` | Перезагрузить все переменные (перезаписывает существующие) |
-| `/env list` | Показать все переменные из `.env` |
-| `/env get KEY` | Получить значение конкретной переменной |
-| `/env set KEY VALUE` | Установить переменную напрямую |
-| `/env from PATH` | Загрузить из другого файла |
-| `/env help` | Показать справку |
-
-### Примеры
+## Установка | Installation
 
 ```bash
-/env                    # Загрузить все переменные
-/env list               # Посмотреть список
-/env get DATABASE_URL   # Получить конкретную переменную
-/env reload             # Перезагрузить
+npm install @htwdev/pi-env-loader
 ```
 
-## Синтаксис .env файла
-
-### Стандартный синтаксис
+## Быстрый старт | Quick Start
 
 ```bash
-# Комментарий
+/env                       # Загрузить из .env в корне проекта
+/env .env.local            # Загрузить из конкретного файла
+/env ./config/dev.env      # Загрузить из подпапки
+/env list                  # Посмотреть список переменных
+/env get DATABASE_URL      # Получить конкретную переменную
+/env reload                # Перезагрузить переменные
+```
+
+## Команды | Commands
+
+| Команда | Описание | Description |
+|---------|----------|-------------|
+| `/env` | Загрузить переменные из `.env` | Load variables from `.env` |
+| `/env <PATH_TO_FILE>` | Загрузить из указанного файла (поддержка Unicode и Windows путей) | Load from custom file path (Unicode and Windows paths supported) |
+| `/env reload` | Перезагрузить все переменные (`set` перезаписывает, `?=` никогда) | Reload all variables (`set` overwrites, `?=` never overwrites) |
+| `/env list` | Показать все переменные | List all variables |
+| `/env get KEY` | Получить значение переменной | Get a specific variable |
+| `/env set KEY VALUE` | Установить переменную в process.env | Set variable in process.env only |
+| `/env help` | Показать справку | Show help |
+
+## Имена переменных | Variable Names
+
+Только ASCII символы: `A-Z`, `a-z`, `0-9`, `_`
+
+Variable names only support ASCII: `A-Z`, `a-z`, `0-9`, `_`
+
+Кириллица и другие Unicode символы поддерживаются только в путях к файлам.
+Cyrillic and other Unicode characters are supported only in file paths.
+
+## Синтаксис .env | .env Syntax
+
+```bash
+# Стандартный | Standard
 KEY=value
 KEY="значение с пробелами"
-```
 
-### Расширенный синтаксис
+# Расширенный | Extended
+export KEY=value
+KEY?=value              # установить если не существует (никогда не перезаписывает) | set only if not exists (never overwrites)
+KEY+=value              # добавить к существующему (через : или ;) | append to existing (with : or ;)
+KEY-=value              # добавить в начало | prepend to existing
 
-```bash
-export KEY=value        # Экспорт переменной
-KEY?=value              # Установить только если не существует
-KEY+=value              # Добавить к существующему (через :)
-KEY-=value              # Добавить в начало (через :)
-```
-
-### Интерполяция переменных
-
-```bash
+# Интерполяция | Interpolation
 DATABASE_URL=postgres://$USER:pass@localhost/db
 API_URL=${BASE_URL}/api
-```
 
-### Multiline значения
-
-```bash
+# Multiline
 MULTI_LINE=строка1\
 строка2
-```
 
-### Escape-последовательности
-
-```bash
+# Escape-последовательности | Escape sequences
 NEWLINE="строка1\nстрока2"
 TAB="кол1\tкол2"
 ```
 
-## Защищённые переменные
+## Пути | Paths
 
-Следующие переменные не будут перезаписаны:
-
-```
-PATH, PATHEXT, HOME, USER, USERNAME, SHELL, TERM, PWD,
-LD_LIBRARY_PATH, DYLD_LIBRARY_PATH, SYSTEMROOT, WINDIR,
-TEMP, TMP, OS, PROCESSOR_ARCHITECTURE, COMPUTERNAME
-```
-
-## Маскирование секретов
-
-Переменные содержащие следующие паттерны автоматически маскируются при выводе:
-
-- `*_KEY` (например: `API_KEY`)
-- `*_SECRET`, `*_SECRETS`
-- `*_PASSWORD`
-- `*_TOKEN`
-- `*_AUTH`
-- `*_CREDENTIALS`
-- `*_PRIVATE`
-- `PASSWORD`, `TOKEN`, `SECRET` (в начале)
-
-## Функции (для разработчиков)
-
-Расширение экспортирует следующие функции для использования в других модулях:
-
-- `parseEnvFile(content)` - парсинг .env файла
-- `interpolateValue(value)` - интерполяция переменных
-- `collectEnvChanges(vars)` - сбор изменений окружения
-- `applyEnvChanges(changes)` - применение изменений
-- `isSecretKey(key)` - проверка на секретный ключ
-- `isProtectedKey(key)` - проверка на защищённый ключ
-
-## Тестирование
-
-Тесты находятся в папке `.tests/`:
+Поддерживаются Unix и Windows пути, включая кириллицу в путях:
 
 ```bash
-npx tsx .pi/extensions/.tests/test.ts
+/env .env                    # Unix стиль
+/env C:\\Projects\.env      # Windows стиль
+/env C:/Projects/.env        # Windows (Unix-style separators)
+/env проекты/настройки.env   # Кириллица в путях (только в путях к файлам)
 ```
 
-> **Внимание:** Тесты нужны только для разработки. Для работы расширения они не требуются.
-
----
-
-## English
-
-### Description
-
-The `env-loader` extension adds the `/env` command to pi for loading environment variables from a `.env` file in the project.
-
-### Installation
-
-1. Copy `env-loader.ts` to `.pi/extensions/` or `~/.pi/agent/extensions/`
-2. Restart pi or use `/reload` command
-3. Use the `/env` command
-
-### Usage
-
-| Command | Description |
-|---------|-------------|
-| `/env` | Load variables from `.env` |
-| `/env reload` | Reload all variables (overwrites existing) |
-| `/env list` | List all variables in `.env` |
-| `/env get KEY` | Get a specific variable |
-| `/env set KEY VALUE` | Set a variable directly |
-| `/env from PATH` | Load from custom file path |
-| `/env help` | Show help |
-
-### .env File Syntax
-
-#### Standard
-
+В переменных поддерживаются смешанные разделители (Git Bash на Windows):
 ```bash
-KEY=value
-KEY="value with spaces"
+PATH=/c/Users/user/bin:$PATH  # Unix-style в Git Bash
 ```
 
-#### Extended Syntax
+## Защищённые переменные | Protected Variables
 
-```bash
-export KEY=value        # Export variable
-KEY?=value              # Set only if doesn't exist
-KEY+=value              # Append to existing (colon-separated)
-KEY-=value              # Prepend to existing
-```
+Не перезаписываются: `PATH`, `HOME`, `USER`, `SHELL`, `TERM`, `TEMP`, `TMP`, `WINDIR` и др.
 
-#### Variable Interpolation
+Never overwritten: `PATH`, `HOME`, `USER`, `SHELL`, `TERM`, `TEMP`, `TMP`, `WINDIR` etc.
 
-```bash
-DATABASE_URL=postgres://$USER:pass@localhost/db
-API_URL=${BASE_URL}/api
-```
+## Маскирование | Masking
 
-#### Multiline Values
+Автоматически маскируются: `*_KEY`, `*_SECRET`, `*_PASSWORD`, `*_TOKEN`, `*_AUTH`, `*_PRIVATE`.
 
-```bash
-MULTI_LINE=line1\
-line2
-```
+Automatically masked: `*_KEY`, `*_SECRET`, `*_PASSWORD`, `*_TOKEN`, `*_AUTH`, `*_PRIVATE`.
 
-#### Escape Sequences
+## Лицензия | License
 
-```bash
-NEWLINE="line1\nline2"
-TAB="col1\tcol2"
-```
-
-### Protected Variables
-
-The following variables will never be overwritten:
-
-```
-PATH, PATHEXT, HOME, USER, USERNAME, SHELL, TERM, PWD,
-LD_LIBRARY_PATH, DYLD_LIBRARY_PATH, SYSTEMROOT, WINDIR,
-TEMP, TMP, OS, PROCESSOR_ARCHITECTURE, COMPUTERNAME
-```
-
-### Secret Masking
-
-Variables containing these patterns are automatically masked in output:
-
-- `*_KEY` (e.g., `API_KEY`)
-- `*_SECRET`, `*_SECRETS`
-- `*_PASSWORD`
-- `*_TOKEN`
-- `*_AUTH`
-- `*_CREDENTIALS`
-- `*_PRIVATE`
-- `PASSWORD`, `TOKEN`, `SECRET` (at start)
-
-### API (for developers)
-
-The extension exports these functions:
-
-- `parseEnvFile(content)` - Parse .env file content
-- `interpolateValue(value)` - Interpolate variables in a value
-- `collectEnvChanges(vars)` - Collect environment changes
-- `applyEnvChanges(changes)` - Apply collected changes
-- `isSecretKey(key)` - Check if key is secret
-- `isProtectedKey(key)` - Check if key is protected
-
-### Testing
-
-Tests are located in the `.tests/` folder:
-
-```bash
-npx tsx .pi/extensions/.tests/test.ts
-```
-
-
-> **Note:** Tests are for development only. They are not required for the extension to work.
-
----
-
-## Vibecode
-
-Этот проект на 100% является **vibecode** — написан с помощью AI-ассистента (pi).
-
-This project is 100% **vibecode** — written by an AI assistant (pi).
+MIT
