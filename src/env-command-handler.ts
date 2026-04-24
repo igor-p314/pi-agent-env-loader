@@ -13,11 +13,13 @@ import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 
 /**
  * Strip quotes from a string (both single and double)
+ * Only removes quotes if they are properly balanced (both opening and closing)
  * @param str - String that may have quotes
  * @returns String without surrounding quotes
  */
 function stripQuotes(str: string): string {
   if (str.length >= 2) {
+    // Only remove quotes if both opening and closing quotes are present
     if ((str.startsWith('"') && str.endsWith('"')) ||
         (str.startsWith("'") && str.endsWith("'"))) {
       return str.slice(1, -1);
@@ -204,9 +206,9 @@ export class EnvCommandHandler {
   }
 
   private handleHelp(ctx: ExtensionContext): void {
-    ctx.ui.notify(`Env Loader v${VERSION} - .env file loader`, "info");
     ctx.ui.notify(
       [
+        `Env Loader v${VERSION}`,
         "Usage:",
         "  /env                     Load variables from .env",
         "  /env <PATH_TO_FILE>      Load from custom file",
@@ -218,19 +220,11 @@ export class EnvCommandHandler {
         "  /env set KEY VALUE       Set variable in process.env",
         "  /env help                Show this help",
         "",
-        "Extended Syntax in .env:",
+        "Supports extended Syntax in .env:",
         "  export KEY=value    Set variable",
         "  KEY?=value         Set only if not exists (default)",
         "  KEY+=value         Append to existing (colon-separated)",
-        "  KEY-=value         Prepend to existing",
-        "",
-        "Features:",
-        "  - Variable interpolation: ${VAR} or $VAR",
-        "  - Escape sequences: \\n, \\t, \\r, \\\", \\'",
-        "  - Multiline values (backslash at end of line)",
-        "  - Inline comments (stripped outside quotes)",
-        "  - Protected vars (PATH, HOME, etc.) skipped",
-        "  - Secret masking (* for KEY, SECRET, TOKEN, PASSWORD)",
+        "  KEY-=value         Prepend to existing"
       ].join("\n"),
       "info"
     );

@@ -124,9 +124,27 @@ export default function envLoaderExtension(pi: ExtensionAPI) {
               const isDir = fs.statSync(fullPath).isDirectory();
               const fullPathWithSep = path.join(dir, e) + (isDir ? pathSep : "");
               
-              // Add quotes if path contains spaces
-              const needsQuotes = e.includes(" ") || e.includes("(") || e.includes(")");
-              const quotedPath = needsQuotes ? `"${fullPathWithSep}"` : fullPathWithSep;
+              // Determine if the entire path needs quoting because it contains spaces or special chars
+              const entirePathNeedsQuotes = fullPathWithSep.includes(" ") || 
+                                           fullPathWithSep.includes("(") || 
+                                           fullPathWithSep.includes(")");
+              
+              // Check if user already typed an opening quote at the beginning of prefix
+              const prefixHasQuote = (prefix.startsWith('"') && !prefix.endsWith('"')) ||
+                                    (prefix.startsWith("'") && !prefix.endsWith("'"));
+              
+              // Build the resulting path, making sure to preserve any existing opening quote
+              let resultPath = fullPathWithSep;
+              if (entirePathNeedsQuotes) {
+                resultPath = `"${fullPathWithSep}`;
+              }
+              if (prefixHasQuote) {
+                const openingQuote = prefix[0]; // either " or '
+                if (!resultPath.startsWith(openingQuote)) {
+                  resultPath = openingQuote + resultPath;
+                }
+              }
+              const quotedPath = resultPath;
               
               return {
                 value: quotedPath,

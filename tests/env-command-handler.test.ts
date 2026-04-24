@@ -37,7 +37,7 @@ describe("EnvCommandHandler", () => {
   describe("help command", () => {
     it("should display help", async () => {
       await handler.execute("help", mockCtx);
-      expect(mockNotify).toHaveBeenCalledTimes(2); // title + content
+      expect(mockNotify).toHaveBeenCalledTimes(1); // unified help output
       expect(mockNotify.mock.calls[0][0]).toContain("Env Loader");
     });
   });
@@ -257,6 +257,25 @@ describe("EnvCommandHandler", () => {
       
       await handler.execute('"C:\\config\\.env" get DB_PASSWORD', mockCtx);
       expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("DB_PASSWORD="), "info");
+    });
+  });
+
+  // Bug tests
+  describe("stripQuotes bug fixes", () => {
+    it("should NOT strip quote if only opening quote present", () => {
+      // This was bug #3 - unbalanced quotes should be preserved
+      expect(stripQuotes('"C:\\Program Files\\app')).toBe('"C:\\Program Files\\app');
+      expect(stripQuotes("'single quote only")).toBe("'single quote only");
+    });
+
+    it("should strip only balanced quotes (both opening and closing)", () => {
+      expect(stripQuotes('"C:\\Program Files\\app"')).toBe("C:\\Program Files\\app");
+      expect(stripQuotes("'path with spaces'")).toBe("path with spaces");
+    });
+
+    it("should NOT strip quotes that are not at start and end", () => {
+      expect(stripQuotes('something"more"')).toBe('something"more"');
+      expect(stripQuotes('start"middle')).toBe('start"middle');
     });
   });
 });
