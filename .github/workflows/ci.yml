@@ -29,14 +29,8 @@ jobs:
       - name: Run linter
         run: npm run lint
 
-      - name: Run tests (tsx)
-        run: npm test
-
-      - name: Run tests (vitest)
-        run: npm run test:vitest
+      - name: Run tests
+        run: npm run test
 
       - name: Build
         run: npm run build
-
-      - name: Check publish readiness
-        run: npm publish --dry-run

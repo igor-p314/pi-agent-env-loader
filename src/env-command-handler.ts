@@ -5,6 +5,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { COMMANDS, COMMANDS_NO_ENV, MAX_DISPLAY_ERRORS, MAX_DISPLAY_KEYS } from "./constants.js";
+import { VERSION } from "./version.js";
 import { EnvParser } from "./parser.js";
 import { EnvCollector } from "./collector.js";
 import type { EnvProvider } from "./types.js";
@@ -98,7 +99,7 @@ export class EnvCommandHandler {
   }
 
   private handleHelp(ctx: ExtensionContext): void {
-    ctx.ui.notify("Env Loader - .env file loader", "info");
+    ctx.ui.notify(`Env Loader v${VERSION} - .env file loader`, "info");
     ctx.ui.notify([
       "Usage:",
       "  /env                     Load variables from .env",
