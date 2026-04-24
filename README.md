@@ -4,7 +4,13 @@
 
 Extension for [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) — Load variables from `.env` file.
 
-[English version 🇺🇸 / 🇬🇧 ](#english-version) | [Версия на русском 🇷🇺](#pi-env-loader-1)
+
+[English version 🇺🇸 / 🇬🇧 ](#about) | [Версия на русском ](#pi-env-loader-1)
+
+---
+🇷🇺
+
+---
 
 ## Установка
 
@@ -98,11 +104,14 @@ PATH=/c/Users/user/bin:$PATH  # Unix-style в Git Bash
 MIT
 
 ## Vibecode
-100% vibecode
+100%
+
+---
+🇺🇸 / 🇬🇧
 
 ---
 
-# English version 🇺🇸 / 🇬🇧
+# English version
 
 [Версия на русском 🇷🇺](#pi-env-loader)
 
@@ -200,4 +209,4 @@ Automatically masked: `*_KEY`, `*_SECRET`, `*_PASSWORD`, `*_TOKEN`, `*_AUTH`, `*
 MIT
 
 ## Vibecode
-100% vibecode
+100%
