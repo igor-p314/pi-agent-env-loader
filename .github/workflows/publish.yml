@@ -8,7 +8,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: github.event.repository.default_branch == 'main' || github.event.repository.default_branch == 'master'
     permissions:
       contents: read
       id-token: write
@@ -35,12 +35,10 @@ jobs:
       - name: Check for version in npm
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          if npm view ${{ matrix.name }}@$VERSION version &>/dev/null; then
+          if npm view @htwdev/pi-env-loader@$VERSION version &>/dev/null; then
             echo "Version $VERSION already published"
             exit 1
           fi
-        env:
-          name: ${{ github.event.repository.name }}
 
       - name: Publish to npm
         run: npm publish --provenance --access public
