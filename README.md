@@ -5,12 +5,10 @@
 Extension for [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) — Load variables from `.env` file.
 
 
-[English version 🇺🇸 / 🇬🇧 ](#about) | [Версия на русском ](#pi-env-loader-1)
+[English version 🇺🇸 / 🇬🇧 ](#about) | [Версия на русском 🇷🇺](#pi-env-loader-1)
 
 ---
-🇷🇺
-
----
+# 🇷🇺
 
 ## Установка
 
@@ -107,9 +105,7 @@ MIT
 100%
 
 ---
-🇺🇸 / 🇬🇧
-
----
+# 🇺🇸 / 🇬🇧
 
 # English version
 
