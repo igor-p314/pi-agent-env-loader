@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { parseEnvFile, collectEnvChanges, maskValue, isSecretKey, isProtectedKey, isPathLike, applyEnvChanges } from '../src/index.js';
+import { parseEnvFile, collectEnvChanges, maskValue, isSecretKey, isProtectedKey, applyEnvChanges } from '../src/index.js';
+import { CYCLE_WARNING_KEY } from '../src/constants.js';
 
 // Helper to create env with type safety
 function makeEnv(env: Record<string, string | undefined>): Record<string, string | undefined> {
@@ -221,37 +222,39 @@ describe('isSecretKey / isProtectedKey', () => {
   });
 });
 
-describe('isPathLike', () => {
-  it('should detect Unix paths', () => {
-    expect(isPathLike('./config/env')).toBe(true);
-    expect(isPathLike('/home/user/.env')).toBe(true);
-    expect(isPathLike('../.env')).toBe(true);
-  });
+describe('collectEnvChanges parameterized', () => {
+  const operations: Array<{ op: "set" | "default" | "append" | "prepend"; existing: string | undefined; force: boolean; expected: boolean }> = [
+    // [set] no existing, no force -> set
+    { op: "set", existing: undefined, force: false, expected: true },
+    // [set] existing, no force -> skip
+    { op: "set", existing: "old", force: false, expected: false },
+    // [set] existing, force -> set
+    { op: "set", existing: "old", force: true, expected: true },
+    // [default] no existing -> set
+    { op: "default", existing: undefined, force: false, expected: true },
+    // [default] existing, force -> SKIP (default never overwrites)
+    { op: "default", existing: "old", force: true, expected: false },
+    // [append] no existing -> set
+    { op: "append", existing: undefined, force: false, expected: true },
+    // [prepend] no existing -> set
+    { op: "prepend", existing: undefined, force: false, expected: true },
+  ];
 
-  it('should detect Windows paths', () => {
-    expect(isPathLike('C:\\Projects\\.env')).toBe(true);
-    expect(isPathLike('D:/config/dev.env')).toBe(true);
-  });
+  operations.forEach(({ op, existing, force, expected }) => {
+    const env = makeEnv(existing !== undefined ? { EXISTING: existing } : {});
+    const vars = [{ key: "EXISTING", value: "new", operation: op as any }];
+    const result = collectEnvChanges(vars, env, force);
 
-  it('should detect Unicode (Cyrillic) paths', () => {
-    expect(isPathLike('./проекты/настройки.env')).toBe(true);
-    expect(isPathLike('C:\\Проекты\\.env')).toBe(true);
-  });
-
-  it('should detect file extensions', () => {
-    expect(isPathLike('file.env')).toBe(true);
-    expect(isPathLike('.env.local')).toBe(true);
-  });
-
-  it('should not match commands', () => {
-    expect(isPathLike('reload')).toBe(false);
-    expect(isPathLike('list')).toBe(false);
-    expect(isPathLike('get')).toBe(false);
-  });
-
-  it('should detect relative paths with dots', () => {
-    expect(isPathLike('.env')).toBe(true);
-    expect(isPathLike('..env')).toBe(false); // Not a path
+    const action = expected ? "should set" : "should skip";
+    const desc = `[${op}] existing=${existing ?? "undefined"} force=${force} -> ${action}`;
+    it(desc, () => {
+      if (expected) {
+        expect(result.toSet.has("EXISTING")).toBe(true);
+      } else {
+        expect(result.toSet.has("EXISTING")).toBe(false);
+        expect(result.skipped.length).toBeGreaterThan(0);
+      }
+    });
   });
 });
 
@@ -261,7 +264,7 @@ describe('interpolation edge cases', () => {
     const result = collectEnvChanges([{ key: 'TEST', value: '${A}' }], env);
     // Should stop at MAX_INTERPOLATION_DEPTH and warn about cycle
     expect(result.warnings.length).toBeGreaterThan(0);
-    const cycleWarning = result.warnings.find(w => w.varName === '__CYCLE__');
+    const cycleWarning = result.warnings.find(w => w.varName === CYCLE_WARNING_KEY);
     expect(cycleWarning).toBeDefined();
   });
 

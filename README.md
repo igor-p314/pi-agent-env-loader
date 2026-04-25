@@ -13,7 +13,15 @@ Extension for [pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding
 ## Установка
 
 ```bash
-npm install @htwdev/pi-env-loader
+pi install npm:@htwdev/pi-env-loader
+pi install git:github.com/HTWDEVRU/pi-env-loader
+```
+
+## Попробовать без установки
+
+```bash
+pi -e git:github.com/HTWDEVRU/pi-env-loader
+pi -e npm:@htwdev/pi-env-loader
 ```
 
 ## Быстрый старт
@@ -116,7 +124,15 @@ pi extension for loading environment variables from `.env` files.
 ## Installation
 
 ```bash
-npm install @htwdev/pi-env-loader
+pi install npm:@htwdev/pi-env-loader
+pi install git:github.com/HTWDEVRU/pi-env-loader
+```
+
+## Try without installing
+
+```bash
+pi -e git:github.com/HTWDEVRU/pi-env-loader
+pi -e npm:@htwdev/pi-env-loader
 ```
 
 ## Quick Start

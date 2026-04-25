@@ -1,6 +1,6 @@
 {
   "name": "@htwdev/pi-env-loader",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "pi extension for loading environment variables from .env files",
   "type": "module",
   "sideEffects": false,
@@ -26,7 +26,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/igor-p314/pi-agent-env-loader"
+    "url": "https://github.com/HTWDEVRU/pi-env-loader"
   },
   "author": "Игорь Пищулин <n1phantom@gmail.com>",
   "license": "MIT",

@@ -4,75 +4,19 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { COMMANDS_NO_ENV, MAX_DISPLAY_ERRORS, MAX_DISPLAY_KEYS } from "./constants.js";
+import { COMMANDS_NO_ENV, MAX_DISPLAY_ERRORS, MAX_DISPLAY_KEYS, PROTECTED_VARS } from "./constants.js";
 import { VERSION } from "./version.js";
 import { EnvParser } from "./parser.js";
 import { EnvCollector } from "./collector.js";
 import type { EnvProvider } from "./types.js";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
+import { parseArgs, stripQuotes } from "./arg-parser.js";
 
-/**
- * Strip quotes from a string (both single and double)
- * Only removes quotes if they are properly balanced (both opening and closing)
- * @param str - String that may have quotes
- * @returns String without surrounding quotes
- */
-function stripQuotes(str: string): string {
-  if (str.length >= 2) {
-    // Only remove quotes if both opening and closing quotes are present
-    if ((str.startsWith('"') && str.endsWith('"')) ||
-        (str.startsWith("'") && str.endsWith("'"))) {
-      return str.slice(1, -1);
-    }
-  }
-  return str;
-}
+/** All known /env subcommands (COMMANDS_NO_ENV + file-requiring commands) */
+const KNOWN_COMMANDS = new Set([...COMMANDS_NO_ENV, "list", "get"]);
 
-/**
- * Parse command arguments, handling quoted paths
- * @param args - Raw command arguments string
- * @returns Array of parts with quotes stripped
- */
-function parseArgs(args: string): string[] {
-  const parts: string[] = [];
-  let current = "";
-  let inSingleQuote = false;
-  let inDoubleQuote = false;
-  let i = 0;
-
-  while (i < args.length) {
-    const char = args[i];
-
-    if (char === "'" && !inDoubleQuote) {
-      inSingleQuote = !inSingleQuote;
-      i++;
-      continue;
-    }
-
-    if (char === '"' && !inSingleQuote) {
-      inDoubleQuote = !inDoubleQuote;
-      i++;
-      continue;
-    }
-
-    if (char === " " && !inSingleQuote && !inDoubleQuote) {
-      if (current) {
-        parts.push(current);
-        current = "";
-      }
-      i++;
-      continue;
-    }
-
-    current += char;
-    i++;
-  }
-
-  if (current) {
-    parts.push(current);
-  }
-
-  return parts;
+function isKnownCommand(arg: string): boolean {
+  return KNOWN_COMMANDS.has(arg);
 }
 
 export class EnvCommandHandler {
@@ -107,7 +51,7 @@ export class EnvCommandHandler {
     const cwd = ctx.cwd;
 
     // Determine if first argument is a command or a path
-    const isCommand = COMMANDS_NO_ENV.has(firstArg) || ["list", "get"].includes(firstArg);
+    const isCommand = isKnownCommand(firstArg);
 
     let targetPath: string;
     let command: string;
@@ -125,7 +69,7 @@ export class EnvCommandHandler {
       const firstArgPath = path.isAbsolute(cleanFirstArg) ? cleanFirstArg : path.join(cwd, cleanFirstArg);
       const secondArg = remainingArgs[0]?.toLowerCase() || "";
 
-      if (COMMANDS_NO_ENV.has(secondArg) || ["list", "get"].includes(secondArg)) {
+      if (isKnownCommand(secondArg)) {
         // /env <path> <command>
         targetPath = firstArgPath;
         command = secondArg;
@@ -280,7 +224,7 @@ export class EnvCommandHandler {
       return;
     }
 
-    if (this.collector.isProtectedKey(setKey)) {
+    if (PROTECTED_VARS.has(setKey.toUpperCase())) {
       ctx.ui.notify(`Protected variable '${setKey}' cannot be modified`, "error");
       return;
     }

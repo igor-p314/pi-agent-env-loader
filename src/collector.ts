@@ -24,13 +24,6 @@ export class EnvCollector {
   }
 
   /**
-   * Check if a key is in the protected list (e.g., PATH, HOME)
-   */
-  isProtectedKey(key: string): boolean {
-    return PROTECTED_VARS.has(key.toUpperCase());
-  }
-
-  /**
    * Mask a value for display, showing only the first few characters
    * @param value - The value to mask
    * @param showChars - Number of characters to leave visible (default: 2)
@@ -64,7 +57,7 @@ export class EnvCollector {
     };
 
     for (const { key, value, operation = "set" } of vars) {
-      if (this.isProtectedKey(key)) {
+      if (PROTECTED_VARS.has(key.toUpperCase())) {
         result.skipped.push({ key, reason: "protected" });
         continue;
       }

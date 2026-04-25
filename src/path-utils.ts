@@ -13,26 +13,24 @@ export function isPathLike(prefix: string, commands: readonly string[] = COMMAND
   if (commands.includes(prefix.toLowerCase())) {
     return false;
   }
-  
+
   // Check for relative path patterns (./ or ../)
-  if (prefix === '.' || prefix === '..' || prefix.startsWith('./') || prefix.startsWith('../')) {
+  const isRelativePath = prefix === '.' || prefix === '..' || prefix.startsWith('./') || prefix.startsWith('../');
+  if (isRelativePath) {
     return true;
   }
-  
+
   // Handle dot-prefixed strings
   if (prefix.startsWith('.')) {
-    // ., .., ./, ../ are paths
-    if (prefix === '.' || prefix === '..' || prefix.startsWith('./') || prefix.startsWith('../')) {
-      return true;
-    }
-    // If it starts with ".." but not followed by / or \, it's likely a filename like "..env"
-    if (prefix.startsWith('..') && !prefix.startsWith('../') && !prefix.startsWith('..\\')) {
+    // .. followed by non-path separator is a filename like "..env"
+    const isDotDotFilename = prefix.startsWith('..') && !prefix.startsWith('../') && !prefix.startsWith('..\\');
+    if (isDotDotFilename) {
       return false;
     }
     // .env, .config - hidden files, treat as paths
     return true;
   }
-  
+
   return (
     prefix.includes("/") ||                    // Unix path separator
     prefix.includes("\\") ||                   // Windows path separator

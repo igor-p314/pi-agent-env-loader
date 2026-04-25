@@ -178,24 +178,22 @@ export class EnvParser {
       }
 
       // Операторы уже удалены при парсинге (slice(idx + 2)),
-      // дополнительная очистка не требуется
-      const finalKey = key.trim();
-
-      if (!finalKey) {
+      // ключ уже обрезан выше — дополнительная очистка не требуется
+      if (!key) {
         errors.push(`Line ${i + 1}: Empty key`);
         continue;
       }
 
       // Only allow ASCII letters, digits, and underscores in env var names
-      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(finalKey)) {
-        errors.push(`Line ${i + 1}: Invalid key "${finalKey}"`);
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+        errors.push(`Line ${i + 1}: Invalid key "${key}"`);
         continue;
       }
 
       const processedValue = unquoteValue(value);
       const finalValue = processEscapes(processedValue);
 
-      vars.push({ key: finalKey, value: finalValue, operation });
+      vars.push({ key, value: finalValue, operation });
     }
 
     return { vars, errors };

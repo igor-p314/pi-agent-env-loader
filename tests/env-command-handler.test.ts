@@ -37,7 +37,7 @@ describe("EnvCommandHandler", () => {
   describe("help command", () => {
     it("should display help", async () => {
       await handler.execute("help", mockCtx);
-      expect(mockNotify).toHaveBeenCalledTimes(1); // unified help output
+      expect(mockNotify).toHaveBeenCalledTimes(1);
       expect(mockNotify.mock.calls[0][0]).toContain("Env Loader");
     });
   });
@@ -66,10 +66,9 @@ describe("EnvCommandHandler", () => {
 
     it("should mask secret key in notification", async () => {
       await handler.execute("set SECRET_KEY mysecret", mockCtx);
-      // The notification should contain masked value
-      const notifyCall = mockNotify.mock.calls.find(call => call[0].includes("Set SECRET_KEY="));
+      const notifyCall = mockNotify.mock.calls.find((call) => call[0].includes("Set SECRET_KEY="));
       expect(notifyCall).toBeTruthy();
-      expect(notifyCall[0]).toContain("*"); // masked
+      expect(notifyCall[0]).toContain("*");
     });
   });
 
@@ -84,7 +83,6 @@ describe("EnvCommandHandler", () => {
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
       vi.spyOn(fs, "readFileSync").mockReturnValue("KEY1=value1\nSECRET=confidential");
       await handler.execute("list", mockCtx);
-      // Should notify about found variables
       expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Found"), "info");
     });
 
@@ -101,11 +99,17 @@ describe("EnvCommandHandler", () => {
       await handler.execute("/abs/path/to/.env list", mockCtx);
       expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("File not found"), "warning");
     });
+
+    // --- Missing branch: custom path file not found with no vars ---
+    it("should notify when custom path file not found", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(false);
+      await handler.execute("/custom/path/.env", mockCtx);
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("File not found"), "warning");
+    });
   });
 
   describe("get command", () => {
     it("should show usage when no key provided", async () => {
-      // Mock file exists and has content
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
       vi.spyOn(fs, "readFileSync").mockReturnValue("KEY1=value1");
       await handler.execute("get", mockCtx);
@@ -137,8 +141,19 @@ describe("EnvCommandHandler", () => {
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
       vi.spyOn(fs, "readFileSync").mockReturnValue("MY_SECRET=supersecret");
       await handler.execute("get MY_SECRET", mockCtx);
-      // maskValue shows first 2 chars + asterisks
       expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("MY_SECRET=su"), "info");
+    });
+
+    // --- Missing branch: get with custom path, variable not found ---
+    it("should notify not found when variable absent in custom path file", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue("OTHER_VAR=exists");
+      vi.mocked(path.basename).mockReturnValue(".env.prod");
+      await handler.execute(".env.prod get MISSING_KEY", mockCtx);
+      expect(mockNotify).toHaveBeenCalledWith(
+        expect.stringContaining("Variable 'MISSING_KEY' not found in .env.prod"),
+        "warning"
+      );
     });
   });
 
@@ -146,7 +161,7 @@ describe("EnvCommandHandler", () => {
     it("should load variables from .env", async () => {
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
       vi.spyOn(fs, "readFileSync").mockReturnValue("NEW_VAR=newvalue");
-      await handler.execute("", mockCtx); // no command, default load
+      await handler.execute("", mockCtx);
       expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Loaded"), "info");
     });
 
@@ -155,6 +170,30 @@ describe("EnvCommandHandler", () => {
       vi.spyOn(fs, "readFileSync").mockReturnValue("");
       await handler.execute("", mockCtx);
       expect(mockNotify).toHaveBeenCalledWith("File is empty or invalid", "info");
+    });
+
+    // --- Missing branch: all vars protected/skipped ---
+    it("should notify correctly when all vars are protected", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue("PATH=/usr/bin\nHOME=/home/user");
+      await handler.execute("", mockCtx);
+      expect(mockNotify).toHaveBeenCalledWith(
+        expect.stringContaining("protected"),
+        "info"
+      );
+    });
+
+    it("should notify correctly when all vars already exist", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue("NEW_VAR=newvalue");
+      // Set env vars so they already exist
+      process.env.NEW_VAR = "existing";
+      await handler.execute("", mockCtx);
+      expect(mockNotify).toHaveBeenCalledWith(
+        expect.stringContaining("already set"),
+        "info"
+      );
+      delete process.env.NEW_VAR;
     });
   });
 
@@ -168,6 +207,26 @@ describe("EnvCommandHandler", () => {
       });
       await handler.execute("list", mockCtx);
       expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Permission denied"), "error");
+    });
+
+    it("should handle ENOENT file read error", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockImplementation(() => {
+        const error: any = new Error("File not found");
+        error.code = "ENOENT";
+        throw error;
+      });
+      await handler.execute("list", mockCtx);
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("File not found"), "error");
+    });
+
+    it("should handle generic file read error", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockImplementation(() => {
+        throw new Error("Unknown error");
+      });
+      await handler.execute("list", mockCtx);
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Unknown error"), "error");
     });
   });
 
@@ -220,50 +279,8 @@ describe("EnvCommandHandler", () => {
     it("should handle no quotes", () => {
       expect(stripQuotes("hello")).toBe("hello");
     });
-  });
 
-  describe("quoted path handling", () => {
-    it("should handle double-quoted path", async () => {
-      vi.spyOn(fs, "existsSync").mockReturnValue(true);
-      vi.spyOn(fs, "readFileSync").mockReturnValue("QUOTED_VAR=test");
-      vi.spyOn(path, "basename").mockReturnValue("test.env");
-      
-      await handler.execute('"C:\\tmp\\test.env" list', mockCtx);
-      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Found"), "info");
-    });
-
-    it("should handle single-quoted path", async () => {
-      vi.spyOn(fs, "existsSync").mockReturnValue(true);
-      vi.spyOn(fs, "readFileSync").mockReturnValue("SINGLE_QUOTED=value");
-      vi.spyOn(path, "basename").mockReturnValue(".env");
-      
-      await handler.execute("'./custom.env' list", mockCtx);
-      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Found"), "info");
-    });
-
-    it("should handle quoted path with spaces", async () => {
-      vi.spyOn(fs, "existsSync").mockReturnValue(true);
-      vi.spyOn(fs, "readFileSync").mockReturnValue("SPACED_VAR=works");
-      vi.spyOn(path, "basename").mockReturnValue("переменные.txt");
-      
-      await handler.execute('"C:\\tmp\\Тестовая папка\\переменные.txt" list', mockCtx);
-      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Found"), "info");
-    });
-
-    it("should handle quoted path with get command", async () => {
-      vi.spyOn(fs, "existsSync").mockReturnValue(true);
-      vi.spyOn(fs, "readFileSync").mockReturnValue("DB_PASSWORD=secret123");
-      vi.spyOn(path, "basename").mockReturnValue(".env");
-      
-      await handler.execute('"C:\\config\\.env" get DB_PASSWORD', mockCtx);
-      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("DB_PASSWORD="), "info");
-    });
-  });
-
-  // Bug tests
-  describe("stripQuotes bug fixes", () => {
     it("should NOT strip quote if only opening quote present", () => {
-      // This was bug #3 - unbalanced quotes should be preserved
       expect(stripQuotes('"C:\\Program Files\\app')).toBe('"C:\\Program Files\\app');
       expect(stripQuotes("'single quote only")).toBe("'single quote only");
     });
@@ -276,6 +293,44 @@ describe("EnvCommandHandler", () => {
     it("should NOT strip quotes that are not at start and end", () => {
       expect(stripQuotes('something"more"')).toBe('something"more"');
       expect(stripQuotes('start"middle')).toBe('start"middle');
+    });
+  });
+
+  describe("quoted path handling", () => {
+    it("should handle double-quoted path", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue("QUOTED_VAR=test");
+      vi.spyOn(path, "basename").mockReturnValue("test.env");
+
+      await handler.execute('"C:\\tmp\\test.env" list', mockCtx);
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Found"), "info");
+    });
+
+    it("should handle single-quoted path", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue("SINGLE_QUOTED=value");
+      vi.spyOn(path, "basename").mockReturnValue(".env");
+
+      await handler.execute("'./custom.env' list", mockCtx);
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Found"), "info");
+    });
+
+    it("should handle quoted path with spaces", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue("SPACED_VAR=works");
+      vi.spyOn(path, "basename").mockReturnValue("переменные.txt");
+
+      await handler.execute('"C:\\tmp\\Тестовая папка\\переменные.txt" list', mockCtx);
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Found"), "info");
+    });
+
+    it("should handle quoted path with get command", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue("DB_PASSWORD=secret123");
+      vi.spyOn(path, "basename").mockReturnValue(".env");
+
+      await handler.execute('"C:\\config\\.env" get DB_PASSWORD', mockCtx);
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("DB_PASSWORD="), "info");
     });
   });
 });

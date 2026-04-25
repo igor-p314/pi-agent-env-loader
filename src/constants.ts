@@ -40,8 +40,15 @@ export const PROTECTED_VARS: ReadonlySet<string> = _PROTECTED_VARS;
 export const MAX_INTERPOLATION_DEPTH = 10;
 
 /** Default separator for append/prepend operations (platform-aware) */
-export const DEFAULT_SEPARATOR = 
-  typeof globalThis !== 'undefined' && globalThis.process?.platform === 'win32' ? ';' : ':';
+export const DEFAULT_SEPARATOR = isWindows() ? ';' : ':';
+
+/** Check if the current platform is Windows */
+export function isWindows(): boolean {
+  return typeof process !== "undefined" && process.platform === "win32";
+}
+
+/** Sentinel key used in warnings to indicate a variable interpolation cycle */
+export const CYCLE_WARNING_KEY = "__CYCLE__";
 
 
 // === Secret key patterns ===

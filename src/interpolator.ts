@@ -4,7 +4,7 @@
  */
 
 import type { InterpolationWarning } from "./types.js";
-import { MAX_INTERPOLATION_DEPTH, DEFAULT_SEPARATOR } from "./constants.js";
+import { MAX_INTERPOLATION_DEPTH, CYCLE_WARNING_KEY } from "./constants.js";
 
 // Non-global regex to avoid state issues
 const INTERPOLATION_REGEX = /\$\{([\p{L}_][\p{L}\p{N}_]*)\}|\$([\p{L}_][\p{L}\p{N}_]*)/gu;
@@ -54,7 +54,7 @@ export class EnvInterpolator {
     }
 
     if (depth >= maxDepth && warnings) {
-      warnings.push({ varName: "__CYCLE__", originalValue: value });
+      warnings.push({ varName: CYCLE_WARNING_KEY, originalValue: value });
     }
 
     return result;

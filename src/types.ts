@@ -10,11 +10,11 @@ export interface EnvProvider {
 
 export class ProcessEnvProvider implements EnvProvider {
   get(key: string): string | undefined {
-    return process.env[key as any];
+    return process.env[key];
   }
 
   set(key: string, value: string): void {
-    process.env[key as any] = value;
+    process.env[key] = value;
   }
 
   has(key: string): boolean {
