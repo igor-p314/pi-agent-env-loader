@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isWindows, CYCLE_WARNING_KEY, DEFAULT_SEPARATOR, COMMANDS, COMMANDS_NO_ENV } from "../src/constants.js";
+import { isWindows, CYCLE_WARNING_KEY, DEFAULT_SEPARATOR, COMMANDS } from "../src/constants.js";
 
 describe("isWindows", () => {
   it("should return boolean", () => {
@@ -49,14 +49,3 @@ describe("COMMANDS", () => {
   });
 });
 
-describe("COMMANDS_NO_ENV", () => {
-  it("should contain commands that don't require a .env file", () => {
-    expect(COMMANDS_NO_ENV.has("help")).toBe(true);
-    expect(COMMANDS_NO_ENV.has("set")).toBe(true);
-  });
-
-  it("should not contain file-requiring commands", () => {
-    expect(COMMANDS_NO_ENV.has("list")).toBe(false);
-    expect(COMMANDS_NO_ENV.has("get")).toBe(false);
-  });
-});

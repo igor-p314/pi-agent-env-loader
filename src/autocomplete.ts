@@ -37,7 +37,7 @@ export function getArgumentCompletions(prefix?: string): Array<{ value: string; 
 
       if (fs.existsSync(resolvedDir) && fs.statSync(resolvedDir).isDirectory()) {
         const entries = fs.readdirSync(resolvedDir);
-        const filtered = entries.filter((e) => e.startsWith(baseName) || !baseName);
+        const filtered = entries.filter((e) => e.toLowerCase().startsWith(baseName.toLowerCase()) || !baseName);
         return filtered.slice(0, 10).map((e) => {
           const fullPath = path.join(resolvedDir, e);
           const isDir = fs.statSync(fullPath).isDirectory();

@@ -83,7 +83,6 @@ export function isSecretKeyPattern(key: string): boolean {
 // === Commands ===
 
 export const COMMANDS = ["list", "get", "set", "help"] as const;
-export const COMMANDS_NO_ENV = new Set(["help", "set"]);
 
 // === Path constants ===
 /** Regex to detect Windows drive paths like C:\ or D:/ (supports Unicode paths) */

@@ -30,10 +30,10 @@ pi -e npm:@htwdev/pi-env-loader
 /env                       # Загрузить из .env в корне проекта
 /env .env.local            # Загрузить из конкретного файла
 /env ./config/dev.env      # Загрузить из подпапки
-/env list                  # Посмотреть список переменных из .env
-/env .env.local list       # Посмотреть список из файла
-/env get DATABASE_URL      # Получить конкретную переменную из .env
-/env .env.local get DB     # Получить переменную из файла
+/env list                  # Посмотреть все установленные переменные
+/env list .env.local       # Посмотреть список из файла
+/env get DATABASE_URL      # Получить переменную из env
+/env get DB .env.local     # Получить переменную из файла
 ```
 
 ## Команды
@@ -42,10 +42,10 @@ pi -e npm:@htwdev/pi-env-loader
 |---------|----------|
 | `/env` | Загрузить переменные из `.env` |
 | `/env <PATH_TO_FILE>` | Загрузить из указанного файла (поддержка Unicode и Windows путей) |
-| `/env list` | Показать все переменные из .env |
-| `/env <PATH> list` | Показать переменные из указанного файла |
-| `/env get KEY` | Получить значение переменной из .env |
-| `/env <PATH> get KEY` | Получить значение переменной из указанного файла |
+| `/env list` | Показать все установленные переменные окружения |
+| `/env list <PATH>` | Показать переменные из файла |
+| `/env get KEY` | Получить значение переменной из env |
+| `/env get KEY <PATH>` | Получить значение переменной из файла |
 | `/env set KEY VALUE` | Установить переменную в process.env только |
 | `/env help` | Показать справку |
 
@@ -141,10 +141,10 @@ pi -e npm:@htwdev/pi-env-loader
 /env                       # Load from .env in project root
 /env .env.local            # Load from specific file
 /env ./config/dev.env      # Load from subfolder
-/env list                  # List all variables from .env
-/env .env.local list       # List variables from custom file
-/env get DATABASE_URL      # Get specific variable from .env
-/env .env.local get DB     # Get variable from custom file
+/env list                  # List all currently set environment variables
+/env list .env.local       # List variables from custom file
+/env get DATABASE_URL      # Get specific variable from env
+/env get DB .env.local     # Get variable from custom file
 ```
 
 ## Commands
@@ -153,10 +153,10 @@ pi -e npm:@htwdev/pi-env-loader
 |---------|-------------|
 | `/env` | Load variables from `.env` |
 | `/env <PATH_TO_FILE>` | Load from custom file path (Unicode and Windows paths supported) |
-| `/env list` | List all variables from .env |
-| `/env <PATH> list` | List variables from custom file |
-| `/env get KEY` | Get specific variable value from .env |
-| `/env <PATH> get KEY` | Get variable value from custom file |
+| `/env list` | List all currently set environment variables |
+| `/env list <PATH>` | List variables from custom file |
+| `/env get KEY` | Get specific variable value from env |
+| `/env get KEY <PATH>` | Get variable value from custom file |
 | `/env set KEY VALUE` | Set variable in process.env only |
 | `/env help` | Show help |
 
