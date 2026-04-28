@@ -185,9 +185,10 @@ export class EnvCommandHandler {
     }
     const lines: string[] = [];
     for (const [key, value] of all) {
-      let display = value;
+      const strValue = value ?? "";
+      let display = strValue;
       if (this.collector.isSecretKey(key)) {
-        display = this.collector.maskValue(value);
+        display = this.collector.maskValue(strValue);
       } else if (display.length > 50) {
         display = display.slice(0, 47) + "...";
       }
