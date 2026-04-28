@@ -12,13 +12,6 @@ import type { EnvProvider } from "./types.js";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { parseArgs, stripQuotes } from "./arg-parser.js";
 
-/** All known /env subcommands */
-const KNOWN_COMMANDS = new Set(["help", "set", "list", "get"]);
-
-function isKnownCommand(arg: string): boolean {
-  return KNOWN_COMMANDS.has(arg);
-}
-
 export class EnvCommandHandler {
   private parser: EnvParser;
   private collector: EnvCollector;
@@ -38,9 +31,9 @@ export class EnvCommandHandler {
    *   /env <path>              -> load from custom file
    *   /env "path with spaces"  -> load from quoted path
    *   /env list                -> list all currently set env variables
-   *   /env list <path>         -> list variables from file
+   *   /env <path> list         -> list variables from file
    *   /env get KEY             -> get KEY from env
-   *   /env get KEY <path>      -> get KEY from file
+   *   /env <path> get KEY      -> get KEY from file
    *   /env set KEY VALUE       -> set KEY in process.env
    *   /env help                -> show help
    */
@@ -50,64 +43,72 @@ export class EnvCommandHandler {
     const remainingArgs = parts.slice(1);
     const cwd = ctx.cwd;
 
-    // If first argument is a known command
-    if (isKnownCommand(firstArg)) {
-      const command = firstArg;
-
-      // list: /env list or /env list <path>
-      if (command === "list") {
-        if (remainingArgs.length === 0) {
-          this.handleListEnv(ctx);
-          return;
-        }
-        const pathArg = stripQuotes(remainingArgs[0]);
-        const resolved = path.isAbsolute(pathArg) ? pathArg : path.join(cwd, pathArg);
-        await this.handleListFromPath(resolved, ctx);
-        return;
-      }
-
-      // get: /env get KEY or /env get KEY <path>
-      if (command === "get") {
-        const key = remainingArgs[0];
-        if (!key) {
-          ctx.ui.notify("Usage: /env get KEY or /env get KEY <PATH>", "warning");
-          return;
-        }
-        if (remainingArgs.length >= 2) {
-          const pathArg = stripQuotes(remainingArgs[1]);
-          const resolved = path.isAbsolute(pathArg) ? pathArg : path.join(cwd, pathArg);
-          await this.handleGetFromPath(resolved, key, ctx);
-          return;
-        }
-        // /env get KEY — read from process.env
-        this.handleGetEnv(key, ctx);
-        return;
-      }
-
-      // set: /env set KEY VALUE
-      if (command === "set") {
-        this.handleSet(remainingArgs, ctx);
-        return;
-      }
-
-      // help
+    // Commands that don't take a path prefix
+    if (firstArg === "help") {
       this.handleHelp(ctx);
       return;
     }
 
-    // First arg is not a command — treat as file path
-    if (firstArg) {
-      const cleanFirstArg = stripQuotes(firstArg);
-      const targetPath = path.isAbsolute(cleanFirstArg) ? cleanFirstArg : path.join(cwd, cleanFirstArg);
-      await this.handleDefault(targetPath, ctx);
+    if (firstArg === "set") {
+      this.handleSet(remainingArgs, ctx);
       return;
     }
 
-    // No args — default .env
-    await this.handleDefault(path.join(cwd, ".env"), ctx);
+    // /env list — list all env vars (no path)
+    if (firstArg === "list" && remainingArgs.length === 0) {
+      this.handleListEnv(ctx);
+      return;
+    }
+
+    // /env get KEY — get from process.env (no path, only one arg after get)
+    if (firstArg === "get" && remainingArgs.length === 1) {
+      this.handleGetEnv(remainingArgs[0], ctx);
+      return;
+    }
+
+    // /env get without key
+    if (firstArg === "get" && remainingArgs.length === 0) {
+      ctx.ui.notify("Usage: /env get KEY or /env <PATH> get KEY", "warning");
+      return;
+    }
+
+    // First arg is a path — check for post-path command
+    const targetPath = this.resolvePath(firstArg, cwd);
+
+    if (remainingArgs.length > 0) {
+      const secondArg = remainingArgs[0]?.toLowerCase() || "";
+
+      // /env <path> list
+      if (secondArg === "list") {
+        await this.handleListFromPath(targetPath, ctx);
+        return;
+      }
+
+      // /env <path> get KEY
+      if (secondArg === "get") {
+        const key = remainingArgs[1];
+        if (!key) {
+          ctx.ui.notify("Usage: /env <PATH> get KEY", "warning");
+          return;
+        }
+        await this.handleGetFromPath(targetPath, key, ctx);
+        return;
+      }
+    }
+
+    // No post-path command — treat as file load
+    await this.handleDefault(targetPath, ctx);
   }
 
   // ── Private helpers ──────────────────────────────────────────────
+
+  /**
+   * Resolve a file path from user input (handles quotes, relative/absolute)
+   */
+  private resolvePath(arg: string, cwd: string): string {
+    const cleanArg = stripQuotes(arg);
+    return path.isAbsolute(cleanArg) ? cleanArg : path.join(cwd, cleanArg);
+  }
 
   /**
    * Load and parse a file. Returns vars on success, null on failure.
@@ -158,9 +159,9 @@ export class EnvCommandHandler {
         "  /env <PATH_TO_FILE>      Load from custom file",
         '  /env "path with spaces"  Load from quoted path',
         "  /env list                List all currently set env variables",
-        "  /env list <PATH>         List variables from file",
+        "  /env <PATH> list         List variables from file",
         "  /env get KEY             Get variable from env",
-        "  /env get KEY <PATH>      Get variable from file",
+        "  /env <PATH> get KEY      Get variable from file",
         "  /env set KEY VALUE       Set variable in process.env",
         "  /env help                Show this help",
         "",

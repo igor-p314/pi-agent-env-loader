@@ -196,4 +196,20 @@ describe('parser edge cases - coverage improvement', () => {
       expect(result.vars[0].value).toBe("say 'hello'");
     });
   });
+
+  describe('parser lines 71, 107, 142 coverage', () => {
+    it('should push remaining content when file ends with backslash continuation', () => {
+      const result = parseEnvFile('KEY=a\\\nb\\\nc\\');
+      expect(result.vars).toHaveLength(1);
+      expect(result.vars[0].value).toBe('abc');
+    });
+
+    it('should parse ?= as default operation', () => {
+      const result = parseEnvFile('MY_VAR?=default_val');
+      expect(result.vars).toHaveLength(1);
+      expect(result.vars[0].key).toBe('MY_VAR');
+      expect(result.vars[0].value).toBe('default_val');
+      expect(result.vars[0].operation).toBe('default');
+    });
+  });
 });
