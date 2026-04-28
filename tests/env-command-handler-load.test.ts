@@ -35,17 +35,43 @@ describe("EnvCommandHandler - Load and Error Handling", () => {
   });
 
   describe("default load command", () => {
-    it("should load variables from .env", async () => {
+    it("should load variables from .env when called without arguments", async () => {
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
       vi.spyOn(fs, "readFileSync").mockReturnValue("NEW_VAR=newvalue");
+      vi.mocked(path.join).mockReturnValue("/fake/.env");
+      
       await handler.execute("", mockCtx);
+      
+      expect(path.join).toHaveBeenCalledWith("/fake", ".env");
       expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Loaded"), "info");
+    });
+
+    it("should construct correct default path for /env without args", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue("VAR=value");
+      vi.mocked(path.join).mockReturnValue("/test/project/.env");
+      
+      mockCtx.cwd = "/test/project";
+      await handler.execute("", mockCtx);
+      
+      expect(path.join).toHaveBeenCalledWith("/test/project", ".env");
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Loaded"), "info");
+    });
+
+    it("should handle missing .env file when called without args", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(false);
+      vi.mocked(path.join).mockReturnValue("/fake/.env");
+      
+      await handler.execute("", mockCtx);
+      
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("File not found"), "warning");
     });
 
     it("should load from custom path", async () => {
       vi.spyOn(fs, "existsSync").mockReturnValue(true);
       vi.spyOn(fs, "readFileSync").mockReturnValue("CUSTOM=test");
       vi.mocked(path.isAbsolute).mockReturnValue(false);
+      vi.mocked(path.join).mockReturnValue("/fake/.env.local");
       await handler.execute(".env.local", mockCtx);
       expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Loaded"), "info");
     });

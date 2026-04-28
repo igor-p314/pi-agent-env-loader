@@ -39,9 +39,17 @@ export class EnvCommandHandler {
    */
   async execute(args: string, ctx: ExtensionContext): Promise<void> {
     const parts = parseArgs(args);
+    const cwd = ctx.cwd;
+
+    // If no arguments provided, default to loading .env from project root
+    if (parts.length === 0) {
+      const defaultPath = path.join(cwd, ".env");
+      await this.handleDefault(defaultPath, ctx);
+      return;
+    }
+
     const firstArg = parts[0]?.toLowerCase() || "";
     const remainingArgs = parts.slice(1);
-    const cwd = ctx.cwd;
 
     // Commands that don't take a path prefix
     if (firstArg === "help") {
