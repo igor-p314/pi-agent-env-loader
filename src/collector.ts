@@ -2,10 +2,10 @@
  * EnvCollector - collects and applies environment changes
  */
 
-import { PROTECTED_VARS, MAX_INTERPOLATION_DEPTH, DEFAULT_SEPARATOR, MAX_INTERPOLATED_LENGTH, isSecretKeyPattern } from "./constants.js";
-import type { EnvChangesResult, ParseOperation, EnvProvider } from "./types.js";
-import { ProcessEnvProvider } from "./types.js";
-import { EnvInterpolator } from "./interpolator.js";
+import { PROTECTED_VARS, MAX_INTERPOLATION_DEPTH, DEFAULT_SEPARATOR, MAX_INTERPOLATED_LENGTH, isSecretKeyPattern } from "./constants";
+import type { EnvChangesResult, ParseOperation, EnvProvider } from "./types";
+import { ProcessEnvProvider } from "./types";
+import { EnvInterpolator } from "./interpolator";
 
 export class EnvCollector {
   private interpolator: EnvInterpolator;

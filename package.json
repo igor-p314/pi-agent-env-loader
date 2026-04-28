@@ -1,19 +1,17 @@
 {
   "name": "@htwdev/pi-env-loader",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "pi extension for loading environment variables from .env files",
   "type": "module",
-  "sideEffects": false,
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./index.ts"
     }
   },
   "files": [
-    "dist",
+    "index.ts",
+    "src",
     "README.md",
     "LICENSE"
   ],
@@ -26,21 +24,21 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/HTWDEVRU/pi-env-loader"
+    "url": "git+https://github.com/HTWDEVRU/pi-env-loader.git"
   },
   "author": "Игорь Пищулин <n1phantom@gmail.com>",
   "license": "MIT",
   "pi": {
     "extensions": [
-      "./dist/index.js"
+      "./index.ts"
     ]
   },
   "scripts": {
-    "build": "tsc",
     "test": "vitest run",
     "test:coverage-core": "vitest run --coverage --coverage.exclude=src/types.ts --coverage.exclude=src/index.ts",
     "test:coverage": "vitest run --coverage",
     "lint": "tsc --noEmit",
+    "dry": "npm pack --dry-run",
     "prepare": "husky"
   },
   "devDependencies": {

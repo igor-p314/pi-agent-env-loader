@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import envLoaderExtension from "../src/index.js";
+import envLoaderExtension from "../index.js";
 
 // We don't need to mock fs for this test — it just registers the command.
 // The actual execute logic is covered by env-command-handler-{commands,load,utils,edge}.test.ts

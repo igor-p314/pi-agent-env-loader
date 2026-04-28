@@ -2,6 +2,8 @@
  * Constants for env-loader
  */
 
+import { PLATFORM } from "./platform";
+
 // === Display constants ===
 /** Maximum number of errors to display */
 export const MAX_DISPLAY_ERRORS = 3;
@@ -40,12 +42,7 @@ export const PROTECTED_VARS: ReadonlySet<string> = _PROTECTED_VARS;
 export const MAX_INTERPOLATION_DEPTH = 10;
 
 /** Default separator for append/prepend operations (platform-aware) */
-export const DEFAULT_SEPARATOR = isWindows() ? ';' : ':';
-
-/** Check if the current platform is Windows */
-export function isWindows(): boolean {
-  return typeof process !== "undefined" && process.platform === "win32";
-}
+export const DEFAULT_SEPARATOR = PLATFORM.isWindows() ? ';' : ':';
 
 /** Sentinel key used in warnings to indicate a variable interpolation cycle */
 export const CYCLE_WARNING_KEY = "__CYCLE__";
@@ -93,3 +90,6 @@ export const PATH_LIKE_REGEX = /[\/\\]/;
 export const FILE_EXTENSION_REGEX = /\.[\p{L}\p{N}_.\u0400-\u04FF]+$/u;
 /** Regex for valid env variable keys (ASCII letters only) */
 export const ENV_KEY_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+// Re-export isWindows for backwards compatibility
+export { isWindows } from './platform';

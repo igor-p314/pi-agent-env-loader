@@ -1,0 +1,20 @@
+# Исключаем неиспользуемые файлы
+.git
+.gitignore
+.changeset
+.npmignore
+.vscode
+
+# TDD и покрытие
+coverage
+tests
+
+# Конфиги
+*.md # Исключая README.md и LICENSE
+!README.md
+!LICENSE
+
+# Рабочие файлы и сборки
+dist
+coverage
+node_modules

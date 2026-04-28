@@ -1,8 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { COMMANDS } from "./constants.js";
-import { isWindows } from "./constants.js";
-import { isPathLike } from "./path-utils.js";
+import { COMMANDS } from "./constants";
+import { isWindows } from "./platform";
+import { isPathLike } from "./path-utils";
 
 /** Commands that can follow a path: /env <path> list, /env <path> get KEY */
 const PATH_POST_COMMANDS = ["list", "get"] as const;

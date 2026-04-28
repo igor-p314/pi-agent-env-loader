@@ -4,13 +4,13 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { MAX_DISPLAY_ERRORS, MAX_DISPLAY_KEYS, PROTECTED_VARS } from "./constants.js";
-import { VERSION } from "./version.js";
-import { EnvParser } from "./parser.js";
-import { EnvCollector } from "./collector.js";
-import type { EnvProvider } from "./types.js";
+import { MAX_DISPLAY_ERRORS, MAX_DISPLAY_KEYS, PROTECTED_VARS } from "./constants";
+import { VERSION } from "./version";
+import { EnvParser } from "./parser";
+import { EnvCollector } from "./collector";
+import type { EnvProvider } from "./types";
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
-import { parseArgs, stripQuotes } from "./arg-parser.js";
+import { parseArgs, stripQuotes } from "./arg-parser";
 
 export class EnvCommandHandler {
   private parser: EnvParser;

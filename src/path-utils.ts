@@ -3,7 +3,7 @@
  * Supports Unix paths, Windows paths, and Unicode characters
  */
 
-import { COMMANDS, WINDOWS_DRIVE_REGEX, PATH_LIKE_REGEX, FILE_EXTENSION_REGEX } from "./constants.js";
+import { COMMANDS, WINDOWS_DRIVE_REGEX, PATH_LIKE_REGEX, FILE_EXTENSION_REGEX } from "./constants";
 
 /**
  * Determines if input looks like a file path rather than a command

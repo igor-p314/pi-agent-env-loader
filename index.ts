@@ -6,16 +6,14 @@
  */
 
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { isSecretKeyPattern, PROTECTED_VARS } from "./constants.js";
-import { EnvCollector } from "./collector.js";
-import { EnvInterpolator } from "./interpolator.js";
-import { VERSION } from "./version.js";
-import { EnvParser, isEscaped, startsWithOperator, unquoteValue, processEscapes } from "./parser.js";
-import type { EnvProvider, ParseResult, ParsedVar, EnvChangesResult, InterpolationWarning, ParseOperation } from "./types.js";
-import { ProcessEnvProvider } from "./types.js";
-import { isPathLike } from "./path-utils.js";
-import { EnvCommandHandler } from "./env-command-handler.js";
-import { getArgumentCompletions } from "./autocomplete.js";
+import { isSecretKeyPattern, PROTECTED_VARS } from "./src/constants";
+import { EnvCollector } from "./src/collector";
+import { EnvInterpolator } from "./src/interpolator";
+import { EnvParser, isEscaped, startsWithOperator, unquoteValue, processEscapes } from "./src/parser";
+import type { EnvProvider, ParseResult, ParsedVar, EnvChangesResult, InterpolationWarning, ParseOperation } from "./src/types";
+import { ProcessEnvProvider } from "./src/types";
+import { EnvCommandHandler } from "./src/env-command-handler";
+import { getArgumentCompletions } from "./src/autocomplete";
 
 // Module-level stateless instances (reused to avoid unnecessary allocations)
 const parserInstance = new EnvParser();
@@ -23,10 +21,7 @@ const interpolatorInstance = new EnvInterpolator();
 
 // === Re-export types ===
 export type { EnvProvider, ParseResult, ParsedVar, EnvChangesResult, InterpolationWarning, ParseOperation };
-export { ProcessEnvProvider, VERSION };
-export { isPathLike };
-export { MAX_INTERPOLATION_DEPTH, DEFAULT_SEPARATOR } from "./constants.js";
-
+export { ProcessEnvProvider };
 // === Public API functions ===
 
 export function isSecretKey(key: string): boolean {

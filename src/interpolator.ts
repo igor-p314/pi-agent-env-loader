@@ -3,8 +3,8 @@
  * Supports both Unix and Windows paths, mixed separators (Git Bash on Windows)
  */
 
-import type { InterpolationWarning } from "./types.js";
-import { MAX_INTERPOLATION_DEPTH, CYCLE_WARNING_KEY } from "./constants.js";
+import type { InterpolationWarning } from "./types";
+import { MAX_INTERPOLATION_DEPTH, CYCLE_WARNING_KEY } from "./constants";
 
 // Non-global regex to avoid state issues
 const INTERPOLATION_REGEX = /\$\{([\p{L}_][\p{L}\p{N}_]*)\}|\$([\p{L}_][\p{L}\p{N}_]*)/gu;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseEnvFile, processEscapes, unquoteValue, isEscaped, startsWithOperator } from '../src/index.js';
+import { parseEnvFile, processEscapes, unquoteValue, isEscaped, startsWithOperator } from '../index.js';
 
 describe('parser edge cases - coverage improvement', () => {
   describe('processEscapes - unknown escape sequences', () => {

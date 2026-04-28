@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { parseEnvFile, collectEnvChanges, maskValue, isSecretKey, isProtectedKey, applyEnvChanges } from '../src/index.js';
+import { parseEnvFile, collectEnvChanges, maskValue, isSecretKey, isProtectedKey, applyEnvChanges } from '../index.js';
 import { CYCLE_WARNING_KEY } from '../src/constants.js';
 
 // Helper to create env with type safety

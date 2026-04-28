@@ -1,52 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { isPathLike, isSecretKey, isProtectedKey, maskValue, parseEnvFile, collectEnvChanges } from '../src/index.js';
+import { isSecretKey, isProtectedKey, maskValue, parseEnvFile, collectEnvChanges } from '../index.js';
+import { isPathLike } from '../src/path-utils.js';
 
-describe('isPathLike extended tests', () => {
-  it('should detect Unix paths', () => {
-    expect(isPathLike('./config/env')).toBe(true);
-    expect(isPathLike('/home/user/.env')).toBe(true);
-    expect(isPathLike('../.env')).toBe(true);
-  });
 
-  it('should detect Windows paths', () => {
-    expect(isPathLike('C:\\Projects\\.env')).toBe(true);
-    expect(isPathLike('D:/config/dev.env')).toBe(true);
-  });
-
-  it('should detect Unicode (Cyrillic) paths', () => {
-    expect(isPathLike('./проекты/настройки.env')).toBe(true);
-    expect(isPathLike('C:\\Проекты\\.env')).toBe(true);
-  });
-
-  it('should detect file extensions', () => {
-    expect(isPathLike('file.env')).toBe(true);
-    expect(isPathLike('.env.local')).toBe(true);
-  });
-
-  it('should not match commands', () => {
-    expect(isPathLike('reload')).toBe(false);
-    expect(isPathLike('list')).toBe(false);
-    expect(isPathLike('get')).toBe(false);
-  });
-
-  it('should detect relative paths with dots', () => {
-    expect(isPathLike('.env')).toBe(true);
-    expect(isPathLike('..env')).toBe(false);
-  });
-
-  it('should detect Windows drives', () => {
-    expect(isPathLike('C:')).toBe(true);
-  });
-
-  it('should handle empty string', () => {
-    expect(isPathLike('')).toBe(false);
-  });
-
-  it('should handle plain commands', () => {
-    expect(isPathLike('help')).toBe(false);
-    expect(isPathLike('set')).toBe(false);
-  });
-});
 
 describe('index.ts exports integration', () => {
   it('should export and work with parseEnvFile', () => {

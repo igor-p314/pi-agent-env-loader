@@ -7,7 +7,7 @@ import {
   isProtectedKey,
   parseEnvFile,
   applyEnvChanges,
-} from "../src/index.js";
+} from "../index.js";
 
 describe("index.ts — public API", () => {
   describe("interpolateValue", () => {

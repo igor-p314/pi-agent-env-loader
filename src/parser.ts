@@ -2,7 +2,7 @@
  * EnvParser - parses .env file content
  */
 
-import type { ParsedVar, ParseResult, ParseOperation } from "./types.js";
+import type { ParsedVar, ParseResult, ParseOperation } from "./types";
 
 export function isEscaped(str: string, index: number): boolean {
   let backslashes = 0;
