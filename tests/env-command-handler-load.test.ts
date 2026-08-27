@@ -15,6 +15,7 @@ describe("EnvCommandHandler - Load and Error Handling", () => {
   let envProvider: ProcessEnvProvider;
   let handler: EnvCommandHandler;
   let mockNotify: ReturnType<typeof vi.fn>;
+  let mockRefresh: ReturnType<typeof vi.fn>;
   let mockCtx: any;
 
   beforeEach(() => {
@@ -23,9 +24,11 @@ describe("EnvCommandHandler - Load and Error Handling", () => {
     collector = new EnvCollector(envProvider);
     handler = new EnvCommandHandler(parser, collector, envProvider);
     mockNotify = vi.fn();
+    mockRefresh = vi.fn().mockResolvedValue(undefined);
     mockCtx = {
       cwd: "/fake",
       ui: { notify: mockNotify },
+      modelRegistry: { refresh: mockRefresh },
     };
     vi.resetAllMocks();
   });
@@ -44,6 +47,67 @@ describe("EnvCommandHandler - Load and Error Handling", () => {
       
       expect(path.join).toHaveBeenCalledWith("/fake", ".env");
       expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Loaded"), "info");
+    });
+
+    it("should refresh model availability after loading variables", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue("_ENV_LOADER_TEST_KEY=newvalue");
+      vi.mocked(path.join).mockReturnValue("/fake/.env");
+
+      await handler.execute("", mockCtx);
+
+      expect(mockRefresh).toHaveBeenCalledWith({ allowNetwork: false });
+      delete process.env._ENV_LOADER_TEST_KEY;
+    });
+
+    it("should not refresh model availability when nothing was loaded", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue("_ALREADY_SET_VAR=test");
+      process.env._ALREADY_SET_VAR = "existing";
+      await handler.execute("", mockCtx);
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("already set"), "info");
+      expect(mockRefresh).not.toHaveBeenCalled();
+      delete process.env._ALREADY_SET_VAR;
+    });
+
+    it("should not refresh model availability when file is empty", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue("");
+      await handler.execute("", mockCtx);
+      expect(mockNotify).toHaveBeenCalledWith("File is empty or invalid", "info");
+      expect(mockRefresh).not.toHaveBeenCalled();
+    });
+
+    it("should not refresh model availability when file not found", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(false);
+      await handler.execute("/missing.env", mockCtx);
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("File not found"), "warning");
+      expect(mockRefresh).not.toHaveBeenCalled();
+    });
+
+    it("should notify warning when model refresh fails", async () => {
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue("_ENV_LOADER_TEST_KEY=newvalue");
+      vi.mocked(path.join).mockReturnValue("/fake/.env");
+      mockRefresh.mockRejectedValue(new Error("boom"));
+
+      await handler.execute("", mockCtx);
+
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Model registry refresh failed"), "warning");
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Loaded"), "info");
+      delete process.env._ENV_LOADER_TEST_KEY;
+    });
+
+    it("should work without modelRegistry (older pi)", async () => {
+      delete mockCtx.modelRegistry;
+      vi.spyOn(fs, "existsSync").mockReturnValue(true);
+      vi.spyOn(fs, "readFileSync").mockReturnValue("_ENV_LOADER_TEST_KEY=newvalue");
+      vi.mocked(path.join).mockReturnValue("/fake/.env");
+
+      await handler.execute("", mockCtx);
+
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Loaded"), "info");
+      delete process.env._ENV_LOADER_TEST_KEY;
     });
 
     it("should construct correct default path for /env without args", async () => {

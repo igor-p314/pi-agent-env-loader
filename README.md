@@ -49,6 +49,8 @@ pi -e npm:@htwdev/pi-env-loader
 | `/env set KEY VALUE` | Установить переменную в process.env только |
 | `/env help` | Показать справку |
 
+После загрузки ключей доступа (например `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`) расширение сразу обновляет список доступных моделей pi — подключаться к удалённым моделям можно без новой сессии (`/new`).
+
 ## Имена переменных
 
 Только ASCII символы: `A-Z`, `a-z`, `0-9`, `_`
@@ -159,6 +161,8 @@ pi -e npm:@htwdev/pi-env-loader
 | `/env <PATH> get KEY` | Get variable value from custom file |
 | `/env set KEY VALUE` | Set variable in process.env only |
 | `/env help` | Show help |
+
+After loading access keys (e.g. `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`) the extension immediately refreshes pi's available-model list — remote model connections work without starting a new session (`/new`).
 
 ## Variable Names
 

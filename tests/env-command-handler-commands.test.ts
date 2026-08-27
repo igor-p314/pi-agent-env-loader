@@ -15,6 +15,7 @@ describe("EnvCommandHandler - Commands", () => {
   let envProvider: ProcessEnvProvider;
   let handler: EnvCommandHandler;
   let mockNotify: ReturnType<typeof vi.fn>;
+  let mockRefresh: ReturnType<typeof vi.fn>;
   let mockCtx: any;
 
   beforeEach(() => {
@@ -23,9 +24,11 @@ describe("EnvCommandHandler - Commands", () => {
     collector = new EnvCollector(envProvider);
     handler = new EnvCommandHandler(parser, collector, envProvider);
     mockNotify = vi.fn();
+    mockRefresh = vi.fn().mockResolvedValue(undefined);
     mockCtx = {
       cwd: "/fake",
       ui: { notify: mockNotify },
+      modelRegistry: { refresh: mockRefresh },
     };
     vi.resetAllMocks();
   });
@@ -64,6 +67,22 @@ describe("EnvCommandHandler - Commands", () => {
       await handler.execute("set MY_VAR test", mockCtx);
       expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Set MY_VAR="), "info");
       expect(envProvider.get("MY_VAR")).toBe("test");
+    });
+
+    it("should refresh model availability after setting key", async () => {
+      await handler.execute("set _ENV_LOADER_SET_KEY sk-test", mockCtx);
+      expect(mockRefresh).toHaveBeenCalledWith({ allowNetwork: false });
+      delete process.env._ENV_LOADER_SET_KEY;
+    });
+
+    it("should not refresh model availability when set fails", async () => {
+      await handler.execute("set PATH /new/path", mockCtx);
+      expect(mockNotify).toHaveBeenCalledWith(expect.stringContaining("Protected variable"), "error");
+      expect(mockRefresh).not.toHaveBeenCalled();
+
+      mockRefresh.mockClear();
+      await handler.execute("set 123KEY value", mockCtx);
+      expect(mockRefresh).not.toHaveBeenCalled();
     });
 
     it("should mask secret key in notification", async () => {

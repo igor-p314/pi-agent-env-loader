@@ -58,7 +58,7 @@ export class EnvCommandHandler {
     }
 
     if (firstArg === "set") {
-      this.handleSet(remainingArgs, ctx);
+      await this.handleSet(remainingArgs, ctx);
       return;
     }
 
@@ -257,7 +257,7 @@ export class EnvCommandHandler {
 
   // ── set ──────────────────────────────────────────────────────────
 
-  private handleSet(paramParts: string[], ctx: ExtensionContext): void {
+  private async handleSet(paramParts: string[], ctx: ExtensionContext): Promise<void> {
     const setKey = paramParts[0];
     const setValue = paramParts.slice(1).join(" ");
 
@@ -280,6 +280,9 @@ export class EnvCommandHandler {
     this.envProvider.set(setKey, converted);
     const display = this.collector.isSecretKey(setKey) ? this.collector.maskValue(setValue) : setValue;
     ctx.ui.notify(`Set ${setKey}=${display} (process.env only)`, "info");
+    // Loaded keys may configure pi's model providers (e.g. *_API_KEY): make them
+    // usable immediately instead of requiring a new session.
+    await this.refreshModelAvailability(ctx);
   }
 
   // ── default load ─────────────────────────────────────────────────
@@ -298,6 +301,10 @@ export class EnvCommandHandler {
     const existsCount = changes.skipped.filter((s) => s.reason === "exists").length;
 
     if (loaded > 0) {
+      // Loaded keys may configure pi's model providers (e.g. *_API_KEY): make
+      // them usable immediately instead of requiring a new session.
+      await this.refreshModelAvailability(ctx);
+
       const parts: string[] = [`Loaded ${loaded} new environment variable(s)`];
       if (existsCount > 0) parts.push(`(${existsCount} already set)`);
       if (protectedCount > 0) parts.push(`(${protectedCount} protected)`);
@@ -313,6 +320,36 @@ export class EnvCommandHandler {
       ctx.ui.notify(
         parts.length > 0 ? `All variable(s) ${parts.join(", ")}` : "All variables already set",
         "info"
+      );
+    }
+  }
+
+  // ── model availability refresh ─────────────────────────────────────
+
+  /**
+   * Re-run pi's provider availability/auth snapshot after environment changes.
+   *
+   * Modern pi versions compute "configured providers" and the available-model
+   * list once at startup (then refresh on /new, /model, or catalog refresh).
+   * Mutating process.env alone is not enough for freshly loaded API keys to
+   * become usable mid-session, so we trigger the same model-registry refresh
+   * the interactive mode runs at startup.
+   *
+   * Older pi versions computed availability live from process.env on every
+   * call, so this is a no-op there.
+   */
+  private async refreshModelAvailability(ctx: ExtensionContext): Promise<void> {
+    const registry = ctx.modelRegistry as
+      | { refresh?: (options?: { allowNetwork?: boolean }) => void | Promise<unknown> }
+      | undefined;
+    if (!registry || typeof registry.refresh !== "function") return;
+    try {
+      // Newer pi returns a Promise; older pi returns void.
+      await registry.refresh({ allowNetwork: false });
+    } catch (error) {
+      ctx.ui.notify(
+        `Model registry refresh failed: ${error instanceof Error ? error.message : String(error)}`,
+        "warning"
       );
     }
   }
